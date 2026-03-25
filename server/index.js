@@ -18,6 +18,14 @@ app.get("/", (req, res) => {
 });
 
 /**
+ * List all budget envelopes.
+ * GET /envelopes
+ */
+app.get("/envelopes", (req, res) => {
+  res.status(200).json(envelopes);
+});
+
+/**
  * Create a new budget envelope.
  * POST /envelopes
  * Body: { "name": string, "budget": number } — budget is the allocated amount for this envelope.
