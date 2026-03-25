@@ -26,6 +26,24 @@ app.get("/envelopes", (req, res) => {
 });
 
 /**
+ * Get one envelope by id (id, name, budget).
+ * GET /envelopes/:id
+ */
+app.get("/envelopes/:id", (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ error: "id must be a positive integer" });
+  }
+
+  const envelope = envelopes.find((e) => e.id === id);
+  if (!envelope) {
+    return res.status(404).json({ error: "envelope not found" });
+  }
+
+  res.status(200).json(envelope);
+});
+
+/**
  * Create a new budget envelope.
  * POST /envelopes
  * Body: { "name": string, "budget": number } — budget is the allocated amount for this envelope.
