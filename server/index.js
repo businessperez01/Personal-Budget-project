@@ -44,6 +44,62 @@ app.get("/envelopes/:id", (req, res) => {
 });
 
 /**
+ * Update an envelope and/or withdraw money from it.
+ * PATCH /envelopes/:id
+ * Body supports:
+ * - { "name": string } to rename
+ * - { "budget": number } to set the current budget (must be >= 0)
+ * - { "withdraw": number } to subtract from current budget (must be > 0 and <= current budget)
+ */
+app.patch("/envelopes/:id", (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({ error: "id must be a positive integer" });
+  }
+
+  const envelope = envelopes.find((e) => e.id === id);
+  if (!envelope) {
+    return res.status(404).json({ error: "envelope not found" });
+  }
+
+  const { name, budget, withdraw } = req.body ?? {};
+
+  if (name !== undefined) {
+    if (typeof name !== "string" || name.trim() === "") {
+      return res.status(400).json({ error: "name must be a non-empty string" });
+    }
+  }
+
+  if (budget !== undefined) {
+    const newBudget = Number(budget);
+    if (!Number.isFinite(newBudget) || newBudget < 0) {
+      return res.status(400).json({ error: "budget must be a non-negative number" });
+    }
+  }
+
+  if (withdraw !== undefined) {
+    const amount = Number(withdraw);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ error: "withdraw must be a positive number" });
+    }
+  }
+
+  // Apply updates
+  if (name !== undefined) envelope.name = name.trim();
+  if (budget !== undefined) envelope.budget = Number(budget);
+
+  if (withdraw !== undefined) {
+    const amount = Number(withdraw);
+    if (amount > envelope.budget) {
+      return res.status(400).json({ error: "insufficient funds in envelope" });
+    }
+    envelope.budget -= amount;
+  }
+
+  res.status(200).json(envelope);
+});
+
+/**
  * Create a new budget envelope.
  * POST /envelopes
  * Body: { "name": string, "budget": number } — budget is the allocated amount for this envelope.
