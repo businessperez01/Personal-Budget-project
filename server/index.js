@@ -100,6 +100,46 @@ app.patch("/envelopes/:id", (req, res) => {
 });
 
 /**
+ * Transfer budget between envelopes.
+ * POST /envelopes/transfer/:fromId/:toId
+ * Body: { "amount": number }
+ */
+app.post("/envelopes/transfer/:fromId/:toId", (req, res) => {
+  const fromId = Number(req.params.fromId);
+  const toId = Number(req.params.toId);
+
+  if (!Number.isInteger(fromId) || fromId < 1 || !Number.isInteger(toId) || toId < 1) {
+    return res.status(400).json({ error: "fromId and toId must be positive integers" });
+  }
+
+  if (fromId === toId) {
+    return res.status(400).json({ error: "fromId and toId must be different" });
+  }
+
+  const { amount } = req.body ?? {};
+  const transferAmount = Number(amount);
+  if (!Number.isFinite(transferAmount) || transferAmount <= 0) {
+    return res.status(400).json({ error: "amount must be a positive number" });
+  }
+
+  const fromEnvelope = envelopes.find((e) => e.id === fromId);
+  const toEnvelope = envelopes.find((e) => e.id === toId);
+
+  if (!fromEnvelope || !toEnvelope) {
+    return res.status(404).json({ error: "one or both envelopes not found" });
+  }
+
+  if (transferAmount > fromEnvelope.budget) {
+    return res.status(400).json({ error: "insufficient funds in source envelope" });
+  }
+
+  fromEnvelope.budget -= transferAmount;
+  toEnvelope.budget += transferAmount;
+
+  res.status(200).json({ from: fromEnvelope, to: toEnvelope, amount: transferAmount });
+});
+
+/**
  * Create a new budget envelope.
  * POST /envelopes
  * Body: { "name": string, "budget": number } — budget is the allocated amount for this envelope.
